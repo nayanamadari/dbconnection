@@ -1,0 +1,309 @@
+package MN_221047014mystore.app;
+import java.util.Iterator;
+import java.util.List;
+import MN_221047014.valueObject.Product;
+import MN_221047014.intr.DataOperations;
+import MN_221047014.implementation.DataAccessFile;
+import MN_221047014.implementation.DataAccessObject;
+public class MyProductStore {
+    //static Logger logger = LogManager.getRootLogger();
+     public static void main(String[] args) {
+            int option;
+            for(;;)
+            {
+            option = printMenu();
+           // logger.debug("Option selected = "+option);
+            // Switch construct
+            switch (option) {
+            case 1:
+              System.out.println("Option 1 selected");
+              addProducts();
+              break;
+            case 2:
+              System.out.println("Option 2 selected");
+              viewProduct();
+              break;
+            case 3:
+              System.out.println("Exit selected...exiting");
+              System.exit(1);
+              break;
+            default:
+              System.out.println("Invalid selection");
+              break; // This break is not really necessary
+            }
+            }
+          }
+       private static int printMenu()
+       {
+           //Took from http://www.java2s.com/Tutorials/Java/IO_How_to/Console/Create_a_Console_menu.htm
+            int swValue;
+            System.out.println("|   MENU SELECTION DEMO                                  |");
+            System.out.println("| Options:                                               |");
+            System.out.println("|        1. Add Product                                  |");
+            System.out.println("|        2. View Product Details                         |");
+            System.out.println("|        3. Exit                                         |");
+            swValue = Keyin.inInt(" Select option: ");
+            return swValue;
+       }
+       private static void addProducts()
+       {
+           try {
+           //logger.debug("Inside the addProduct method");
+           Product p= new Product();
+           p.setId(Keyin.inInt("Enter ID: "));
+           //System.out.println("Added the new Product ID ");
+           System.out.println("Enter Name : ");
+           p.setName(Keyin.inString());
+           //System.out.println("Added the new Product Name "+p.getName());
+           p.setPrice(Keyin.inInt("Enter Price: "));
+          // System.out.println("Added the new Product Price "+p.getPrice());
+           p.setQuantities(Keyin.inInt("Enter Quantities: "));
+           //invoke data layer to do the work
+           DataOperations dao = new DataAccessObject();
+          // DataOperations dao1 = new DataAccessFile();
+           dao.addProduct(p);  //persisting your information
+           System.out.println("Added the new Product "+p.getId());
+           //logger.info("Added the new Product "+b.getId());
+           return;
+           } catch (Exception ex)
+           {
+               System.out.println("Failed to add the Product - Product ID already exists ");
+           }
+       }
+       private static void viewProduct() {
+           // logger.debug("Inside the vewProducts method");
+           List<Product> result;
+           //invoke data layer to do the work
+           DataOperations dao = new DataAccessObject();
+           //DataOperations dao1 = new DataAccessFile();
+           result = dao.viewProducts();
+           if (!result.isEmpty()) {
+               Iterator<Product> iter = result.iterator();
+               System.out.println("Results are as below");
+               while (iter.hasNext()) {
+                   Product p = iter.next();
+                   System.out.println(p);
+                   // logger.info(b);
+               }
+           }
+       }
+     }
+}
+
+        class Keyin {
+            //*******************************
+            //   support methods
+            //*******************************
+            //Method to display the user's prompt string
+            public static void printPrompt(String prompt) {
+                System.out.print(prompt + " ");
+                System.out.flush();
+            }
+
+            //Method to make sure no data is available in the
+            //input stream
+            public static void inputFlush() {
+                int dummy;
+                int bAvail;
+                try {
+                    while ((System.in.available()) != 0)
+                        dummy = System.in.read();
+                } catch (java.io.IOException e) {
+                    System.out.println("Input error");
+                }
+            }
+
+            public static String inString() {
+                int aChar;
+                String s = "";
+                boolean finished = false;
+
+                while (!finished) {
+                    try {
+                        aChar = System.in.read();
+                        if (aChar < 0 || (char) aChar == '\n')
+                            finished = true;
+                        else if ((char) aChar != '\r')
+                            s = s + (char) aChar; // Enter into string
+                    } catch (java.io.IOException e) {
+                        System.out.println("Input error");
+                        finished = true;
+                    }
+                }
+                return s;
+            }
+
+            public static int inInt(String prompt) {
+                while (true) {
+                    inputFlush();
+                    printPrompt(prompt);
+                    try {
+                        return Integer.valueOf(inString().trim()).intValue();
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Not an integer");
+                    }
+                }
+            }
+
+
+        }
+}
+
+
+package MN_221047014.intr;
+import java.util.List;
+import MN_221047014.valueObject.Product;
+public interface DataOperations {	
+	void addProduct(Product p) throws Exception;
+	List viewProducts();
+}
+
+
+
+package MN_221047014.implementation;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import MN_221047014.valueObject.Product;
+import MN_221047014.intr.DataOperations;
+
+public class DataAccessObject implements DataOperations {
+    //static Logger logger = LogManager.getRootLogger();
+    static Connection connection;
+    @Override
+    public void addProduct(Product p) throws Exception {
+        String connectionUrl1 = "jdbc:sqlserver://172.16.51.44;" +
+                "databaseName=221047014;integratedSecurity=false;user=NAYANA;password=nayana@765";
+        connection = DriverManager.getConnection(connectionUrl1);
+        try {
+            connection = DriverManager.getConnection(connectionUrl1);
+            PreparedStatement stmt=connection.prepareStatement("insert into MyProducts values(?,?,?,?)");
+            stmt.setInt(1,p.getId());
+            stmt.setString(2,p.getName()); 
+            stmt.setInt(3,p.getPrice());  
+            stmt.setInt(4,p.getQuantities()); 
+            stmt.executeUpdate();
+            //logger.info("Details added for the ID ="+p.getId());
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+        //    logger.error(e.getMessage());
+            throw e;
+        } finally {
+            if(connection != null)
+            {   
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+            //        logger.error(e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    public List<Product> viewProducts() {
+        List<Product> prod = new ArrayList<Product>(); //somelist.add(obj1); somelist.add(obj2)......Typesafe...
+        String connectionUrl2 = "jdbc:sqlserver://172.16.51.44;" +
+                "databaseName=221047014;integratedSecurity=false;user=NAYANA;password=nayana@765";
+         ResultSet resultset;
+        try {
+        connection = DriverManager.getConnection(connectionUrl2);
+            PreparedStatement stmt=connection.prepareStatement("select * from MyProducts");  
+            resultset = stmt.executeQuery();
+            Product p;
+            while(resultset.next())   {
+               p = new Product();
+               p.setId(resultset.getInt("ID"));
+               p.setName(resultset.getString("Name"));
+               p.setPrice(resultset.getInt("Price"));
+               p.setQuantities(resultset.getInt("Quantities"));
+               prod.add(p);
+               // logger.info("Retrieved Product "+b.getId());
+             }
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            //logger.error(e.getMessage());
+        } finally {
+            if(connection != null)
+            {   
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                //    logger.error(e.getMessage());
+                }
+            }
+            return prod;
+        }
+    }
+}
+
+
+
+package MN_221047014.implementation;
+
+import java.util.List;
+import MN_221047014.valueObject.Product;
+import MN_221047014.intr.DataOperations;
+public class DataAccessFile implements DataOperations {
+ @Override
+ public void addProduct(Product p) {
+ // TODO Auto-generated method stub
+ }
+ public List viewProducts() {
+ return null;
+ }
+}
+
+package MN_221047014.valueObject;
+public class Product {
+private int id;
+private String Name;
+private int Price;
+private int Quantities;
+public int getId() {
+return id;
+}
+public void setId(int id) {
+
+    this.id = id;
+}
+public void setName(String Name) {
+
+    this.Name= Name;
+}
+public String getName() {
+
+    return Name;
+}
+public void setPrice(int Price) {
+
+    this.Price = Price;
+}
+public int getPrice() {
+
+    return Price;
+}
+public int getQuantities() {
+return Quantities;
+}
+public void setQuantities(int Quantities) {
+
+    this.Quantities = Quantities;
+}
+public String toString()
+{
+return "The ID ="+this.id+" Name="+this.Name+" Price="+this.Price+"Quantities="+this.Quantities;
+}
+}
